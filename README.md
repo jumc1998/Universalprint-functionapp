@@ -6,7 +6,8 @@ This repository contains an Azure Function written in C# (.NET 8.0, isolated wor
 
 - `UploadToUniversalPrintFunctionApp/`
   - `UploadToUniversalPrintFunctionApp.csproj` – Azure Functions project file targeting .NET 8 (isolated).
-  - `UploadToUniversalPrint.cs` – Implementation of the `UploadToUniversalPrint` function.
+- `UploadToUniversalPrint.cs` – Implementation of the `UploadToUniversalPrint` function.
+  - `Program.cs` – Entry point that starts the isolated Functions host.
 
 ## Building
 
