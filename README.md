@@ -1,11 +1,11 @@
 # Universalprint Function App
 
-This repository contains an Azure Function written in C# (.NET 6.0) to upload files to Microsoft Universal Print. The function exposes an HTTP endpoint that accepts a JSON payload with an upload URL, a base64-encoded file, and the file size. It handles constructing a PUT request with the correct `Content-Range` and `Content-Length` headers so that Power Automate can upload files to Universal Print.
+This repository contains an Azure Function written in C# (.NET 8.0, isolated worker) to upload files to Microsoft Universal Print. The function exposes an HTTP endpoint that accepts a JSON payload with an upload URL, a base64-encoded file, and the file size. It handles constructing a PUT request with the correct `Content-Range` and `Content-Length` headers so that Power Automate can upload files to Universal Print.
 
 ## Project Structure
 
 - `UploadToUniversalPrintFunctionApp/`
-  - `UploadToUniversalPrintFunctionApp.csproj` – Azure Functions project file targeting .NET 6.
+  - `UploadToUniversalPrintFunctionApp.csproj` – Azure Functions project file targeting .NET 8 (isolated).
   - `UploadToUniversalPrint.cs` – Implementation of the `UploadToUniversalPrint` function.
 
 ## Building

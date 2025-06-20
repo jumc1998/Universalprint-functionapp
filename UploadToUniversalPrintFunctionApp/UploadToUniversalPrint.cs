@@ -2,32 +2,34 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Http;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 
 namespace UploadToUniversalPrintFunctionApp
 {
-    public static class UploadToUniversalPrint
+    public class UploadToUniversalPrint
     {
         private static readonly HttpClient httpClient = new HttpClient();
 
-        [FunctionName("UploadToUniversalPrint")]
-        public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
-            ILogger log)
+        [Function("UploadToUniversalPrint")]
+        public async Task<HttpResponseData> Run(
+            [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req,
+            FunctionContext context)
         {
+            var log = context.GetLogger("UploadToUniversalPrint");
             try
             {
                 string requestBody = await new StreamReader(req.Body).ReadToEndAsync();
                 if (string.IsNullOrWhiteSpace(requestBody))
                 {
-                    return new BadRequestObjectResult("Request body is empty.");
+                    var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResponse.WriteStringAsync("Request body is empty.");
+                    return badResponse;
                 }
 
                 UploadRequest? data;
@@ -38,12 +40,16 @@ namespace UploadToUniversalPrintFunctionApp
                 catch (Exception ex)
                 {
                     log.LogError(ex, "Failed to deserialize request body.");
-                    return new BadRequestObjectResult("Invalid JSON payload.");
+                    var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResponse.WriteStringAsync("Invalid JSON payload.");
+                    return badResponse;
                 }
 
                 if (data == null || string.IsNullOrWhiteSpace(data.UploadUrl) || string.IsNullOrWhiteSpace(data.FileBase64) || data.FileSize <= 0)
                 {
-                    return new BadRequestObjectResult("Missing required fields.");
+                    var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResponse.WriteStringAsync("Missing required fields.");
+                    return badResponse;
                 }
 
                 byte[] fileBytes;
@@ -54,7 +60,9 @@ namespace UploadToUniversalPrintFunctionApp
                 catch (Exception ex)
                 {
                     log.LogError(ex, "Invalid base64 string.");
-                    return new BadRequestObjectResult("fileBase64 is not valid base64.");
+                    var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+                    await badResponse.WriteStringAsync("fileBase64 is not valid base64.");
+                    return badResponse;
                 }
 
                 using var requestMessage = new HttpRequestMessage(HttpMethod.Put, data.UploadUrl);
@@ -76,12 +84,16 @@ namespace UploadToUniversalPrintFunctionApp
                     Body = responseBody
                 };
 
-                return new OkObjectResult(result);
+                var ok = req.CreateResponse(HttpStatusCode.OK);
+                await ok.WriteAsJsonAsync(result);
+                return ok;
             }
             catch (Exception ex)
             {
                 log.LogError(ex, "Unhandled exception while processing request.");
-                return new ObjectResult($"Internal Server Error: {ex.Message}") { StatusCode = 500 };
+                var error = req.CreateResponse(HttpStatusCode.InternalServerError);
+                await error.WriteStringAsync($"Internal Server Error: {ex.Message}");
+                return error;
             }
         }
 
